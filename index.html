@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cuenta corriente — Quequén 554 S.A.</title>
+<style>
+:root{
+  --ink:#1c2422;
+  --ink-soft:#4b5652;
+  --paper:#f6f5f1;
+  --panel:#ffffff;
+  --line:#dcd8ce;
+  --line-strong:#b9b2a1;
+  --accent:#2c5f4e;
+  --accent-soft:#e4ede9;
+  --debe:#8a4a2b;
+  --debe-soft:#f4e6dc;
+  --haber:#2c5f4e;
+  --haber-soft:#e4ede9;
+  --warn:#a3391f;
+  --warn-soft:#f6e2dc;
+  --radius:3px;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#eae7df; --ink-soft:#a8a49a; --paper:#181a17; --panel:#212420;
+    --line:#33362f; --line-strong:#4a4d43; --accent:#7bbf9f; --accent-soft:#1f2e27;
+    --debe:#e0966b; --debe-soft:#2c241d; --haber:#7bbf9f; --haber-soft:#1c2b24;
+    --warn:#e28066; --warn-soft:#2e211c;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#eae7df; --ink-soft:#a8a49a; --paper:#181a17; --panel:#212420;
+  --line:#33362f; --line-strong:#4a4d43; --accent:#7bbf9f; --accent-soft:#1f2e27;
+  --debe:#e0966b; --debe-soft:#2c241d; --haber:#7bbf9f; --haber-soft:#1c2b24;
+  --warn:#e28066; --warn-soft:#2e211c;
+}
+*{box-sizing:border-box;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+body{
+  margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans);
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit;}
+.wrap{max-width:1260px; margin:0 auto; padding:28px 20px 80px;}
+
+header.top{
+  display:flex; align-items:baseline; justify-content:space-between; gap:16px;
+  border-bottom:2px solid var(--ink); padding-bottom:14px; margin-bottom:22px; flex-wrap:wrap;
+}
+header.top h1{
+  font-family:var(--serif); font-weight:600; font-size:1.55rem; margin:0; letter-spacing:.2px;
+}
+header.top .meta{font-family:var(--mono); font-size:.75rem; color:var(--ink-soft); text-align:right;}
+
+.pending-banner{
+  background:var(--warn-soft); border:1px solid var(--warn); border-radius:var(--radius);
+  padding:14px 16px; margin-bottom:24px;
+}
+.pending-banner h2{margin:0 0 4px; font-size:.95rem; font-family:var(--serif);}
+.pending-banner p{margin:0 0 10px; font-size:.82rem; color:var(--ink-soft);}
+.pending-row{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:8px 0; border-top:1px solid var(--line);
+}
+.pending-row:first-of-type{border-top:none;}
+.pending-row .desc{flex:1 1 260px; font-size:.82rem;}
+.pending-row .desc .doc{font-family:var(--mono); font-size:.72rem; color:var(--ink-soft); display:block;}
+.pending-row .amt{font-family:var(--mono); font-size:.82rem; min-width:110px; text-align:right;}
+.assign-buttons{display:flex; gap:6px;}
+.assign-btn{
+  font-family:var(--mono); font-size:.78rem; padding:6px 12px; border:1px solid var(--warn);
+  border-radius:var(--radius); background:var(--panel); color:var(--warn); cursor:pointer;
+}
+.assign-btn:hover{background:var(--warn); color:var(--panel);}
+
+.row-vencido td{background:var(--warn-soft);}
+.day-start td{border-top:2px solid var(--line-strong);}
+.row-vencido:hover td{background:var(--warn-soft);}
+
+table.ledger{width:100%; border-collapse:collapse; font-size:.82rem;}
+table.ledger thead th{
+  text-align:center; font-weight:500; font-size:.7rem; color:var(--ink-soft);
+  border-bottom:1px solid var(--line-strong); padding:6px 8px; white-space:nowrap;
+  cursor:pointer; user-select:none;
+}
+table.ledger thead th:hover{color:var(--ink);}
+table.ledger thead th.active{color:var(--ink); font-weight:600;}
+table.ledger thead th .arrow{font-size:.6rem; margin-left:3px; color:var(--accent);}
+table.ledger tbody td{padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top;}
+table.ledger td, table.ledger th{user-select:none;}
+table.ledger td.num, table.ledger td.datecell{user-select:text; cursor:text;}
+table.ledger tbody tr:hover td{background:var(--accent-soft);}
+table.ledger td.num{font-family:var(--mono); text-align:right; white-space:nowrap;}
+table.ledger td.debe{color:var(--debe);}
+table.ledger td.haber{color:var(--haber);}
+table.ledger thead tr.branch-header th{
+  font-family:var(--serif); font-size:.85rem; color:var(--ink); font-weight:600;
+  border-bottom:none; cursor:default; padding-top:10px;
+}
+table.ledger thead tr.branch-header th:nth-child(2){border-right:1px solid var(--line-strong);}
+table.ledger thead tr:not(.branch-header) th:nth-child(4),
+table.ledger tbody td:nth-child(4){border-right:1px solid var(--line-strong);}
+.empty-row td{padding:14px 8px; color:var(--ink-soft); font-style:italic; font-size:.8rem;}
+
+.overflow{overflow-x:auto;}
+footer.note{margin-top:40px; font-size:.72rem; color:var(--ink-soft); border-top:1px solid var(--line); padding-top:14px;}
+
+.upload-zone{
+  border:1.5px dashed var(--line-strong); border-radius:var(--radius); padding:20px;
+  margin-bottom:22px; text-align:center; background:var(--panel); cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+.upload-zone.dragover{border-color:var(--accent); background:var(--accent-soft);}
+.upload-title{font-family:var(--serif); font-size:1rem; margin:0 0 4px;}
+.upload-sub{font-size:.82rem; color:var(--ink-soft); margin:0 0 8px;}
+.link-btn{
+  background:none; border:none; padding:0; font:inherit; color:var(--accent);
+  text-decoration:underline; cursor:pointer;
+}
+.upload-current{font-family:var(--mono); font-size:.72rem; color:var(--ink-soft); margin:0;}
+
+.filters{
+  display:flex; align-items:center; gap:16px; margin-bottom:18px;
+  padding:10px 14px; border:1px solid var(--line); border-radius:var(--radius); background:var(--panel);
+  font-size:.82rem;
+}
+.filters label{display:flex; align-items:center; gap:8px;}
+.filters input[type="number"]{
+  width:56px; font-family:var(--sans); font-size:.82rem; padding:4px 6px;
+  border:1px solid var(--line-strong); border-radius:var(--radius); background:var(--panel); color:var(--ink);
+}
+
+.empty-state{
+  text-align:center; padding:40px 20px; color:var(--ink-soft); font-family:var(--serif);
+  font-size:1rem; border:1px dashed var(--line); border-radius:var(--radius);
+}
+
+@media (max-width:600px){
+  header.top{flex-direction:column;}
+  header.top .meta{text-align:left;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>Cuenta corriente — Quequén 554 S.A.</h1>
+    <div class="meta">Datos al 21/09/2026<br>Vencimiento evaluado contra la fecha de hoy</div>
+  </header>
+
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+    <p class="upload-title">Cargar cuenta corriente (.xlsx)</p>
+    <p class="upload-sub">Arrastrá el archivo acá o <button type="button" id="browseBtn" class="link-btn">buscalo en tu equipo</button></p>
+    <p class="upload-current" id="uploadCurrent">No hay datos cargados todavía.</p>
+  </div>
+
+  <div id="emptyState" class="empty-state">Subí un archivo Excel de cuenta corriente para empezar.</div>
+
+  <div id="pendingBanner" class="pending-banner" hidden>
+    <h2>Ítems sin sucursal identificada</h2>
+    <p>El texto del comprobante no menciona 31338 ni 31360. Asigná la sucursal correcta para incluirlos en su cuenta corriente.</p>
+    <div id="pendingList"></div>
+  </div>
+
+  <div id="dayFilterBar" class="filters" hidden>
+    <label for="daysInput">Mostrar últimos <input type="number" id="daysInput" min="1" value="3"> días (F. Doc.)</label>
+    <button type="button" id="showAllDaysBtn" class="link-btn">Mostrar todos</button>
+  </div>
+
+  <div id="branchView"></div>
+
+  <footer class="note">
+    Debe = comprobantes que aumentan el saldo pendiente (rendiciones, facturas, notas de débito). Haber = comprobantes que lo disminuyen (recibos, créditos, saldos negativos). "Vencido" compara F. Venc. con la fecha de hoy. Las asignaciones de sucursal se guardan en este navegador.
+  </footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let ITEMS = [];
+const BRANCHES = ["31338","31360"];
+const STORAGE_KEY = "sucursal-assignments-v1";
+
+function loadAssignments(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveAssignments(a){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(a)); }catch(e){}
+}
+let assignments = loadAssignments();
+
+function effectiveSucursal(item){
+  return item.sucursal || assignments[item.id] || null;
+}
+
+function fmtMoney(n){
+  const abs = Math.abs(n);
+  return abs.toLocaleString("es-AR", {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtDate(iso){
+  if(!iso) return "—";
+  const [y,m,d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+function todayISO(){
+  const d = new Date();
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+const TODAY = todayISO();
+function isVencido(item){
+  return item.fvenc && item.fvenc < TODAY;
+}
+
+function renderPending(){
+  const pending = ITEMS.filter(it => !effectiveSucursal(it));
+  const banner = document.getElementById("pendingBanner");
+  const list = document.getElementById("pendingList");
+  if(pending.length === 0){ banner.hidden = true; return; }
+  banner.hidden = false;
+  list.innerHTML = "";
+  pending.forEach(it => {
+    const row = document.createElement("div");
+    row.className = "pending-row";
+    row.innerHTML = `
+      <div class="desc">${it.tipo} — ${fmtDate(it.fdoc)}
+        <span class="doc">Nro. ${it.nroLegal}${it.texto ? " · " + it.texto : ""}${it.tpos ? " · " + it.tpos : ""}</span>
+      </div>
+      <div class="amt ${it.monto < 0 ? 'haber' : 'debe'}">${it.monto < 0 ? "Haber " : "Debe "}${fmtMoney(it.monto)}</div>
+    `;
+    const btnGroup = document.createElement("div");
+    btnGroup.className = "assign-buttons";
+    BRANCHES.forEach(b => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "assign-btn";
+      btn.textContent = b;
+      btn.addEventListener("click", () => {
+        assignments[it.id] = b;
+        saveAssignments(assignments);
+        renderAll();
+      });
+      btnGroup.appendChild(btn);
+    });
+    row.appendChild(btnGroup);
+    list.appendChild(row);
+  });
+}
+
+const COLUMNS = [
+  {key: "fdoc", label: "F. Doc."},
+  {key: "fvenc", label: "F. Venc."},
+  {key: "debe1", label: "Debe"},
+  {key: "haber1", label: "Haber"},
+  {key: "debe2", label: "Debe"},
+  {key: "haber2", label: "Haber"}
+];
+const sortState = {field: "default", dir: "desc"};
+
+function sortMerged(field){
+  if(sortState.field === field){ sortState.dir = sortState.dir === "asc" ? "desc" : "asc"; }
+  else { sortState.field = field; sortState.dir = "asc"; }
+  renderMergedTable();
+}
+
+/* Une, por par (F.Doc, F.Venc), un ítem del debe/haber de cada sucursal en la misma línea
+   (sin sumar montos); si sobran ítems del mismo lado y sucursal, van en líneas propias. */
+function buildMergedRows(){
+  const groups = new Map();
+  ITEMS.forEach(it => {
+    const suc = effectiveSucursal(it);
+    if(!suc) return;
+    const key = (it.fdoc || "") + "|" + (it.fvenc || "");
+    if(!groups.has(key)){
+      groups.set(key, {fdoc: it.fdoc, fvenc: it.fvenc, debe1: [], haber1: [], debe2: [], haber2: []});
+    }
+    const g = groups.get(key);
+    const side = it.monto > 0 ? "debe" : "haber";
+    const slot = side + (suc === BRANCHES[0] ? "1" : "2");
+    g[slot].push(it.monto);
+  });
+  const rows = [];
+  groups.forEach(g => {
+    const n = Math.max(g.debe1.length, g.haber1.length, g.debe2.length, g.haber2.length);
+    for(let i = 0; i < n; i++){
+      rows.push({
+        fdoc: g.fdoc, fvenc: g.fvenc,
+        debe1: g.debe1[i] ?? null, haber1: g.haber1[i] ?? null,
+        debe2: g.debe2[i] ?? null, haber2: g.haber2[i] ?? null
+      });
+    }
+  });
+  return rows;
+}
+
+function compareMerged(a, b, field){
+  switch(field){
+    case "fdoc": return (a.fdoc || "").localeCompare(b.fdoc || "");
+    case "fvenc": return (a.fvenc || "").localeCompare(b.fvenc || "");
+    case "debe1": return (a.debe1 || 0) - (b.debe1 || 0);
+    case "haber1": return (a.haber1 || 0) - (b.haber1 || 0);
+    case "debe2": return (a.debe2 || 0) - (b.debe2 || 0);
+    case "haber2": return (a.haber2 || 0) - (b.haber2 || 0);
+    default: return 0;
+  }
+}
+
+/* Orden por defecto: F. Doc. descendente */
+function compareDefault(a, b){
+  const da = a.fdoc || "", db = b.fdoc || "";
+  if(da !== db) return db.localeCompare(da);
+  return (a.fvenc || "").localeCompare(b.fvenc || "");
+}
+
+function numCell(cls, val){
+  const has = val !== null && val !== undefined && val !== 0;
+  const raw = has ? val.toFixed(2) : "";
+  const display = has ? (val < 0 ? "-" + fmtMoney(val) : fmtMoney(val)) : "";
+  return `<td class="num ${cls}" data-raw="${raw}">${display}</td>`;
+}
+
+const dayFilter = {days: 3, showAll: false};
+
+function renderMergedTable(){
+  let rows = buildMergedRows().sort((a,b) => {
+    if(sortState.field === "default") return compareDefault(a,b);
+    return compareMerged(a,b,sortState.field) * (sortState.dir === "asc" ? 1 : -1);
+  });
+
+  if(!dayFilter.showAll){
+    const distinctDays = [...new Set(rows.map(r => r.fdoc).filter(Boolean))].sort().reverse();
+    const allowed = new Set(distinctDays.slice(0, dayFilter.days));
+    rows = rows.filter(r => allowed.has(r.fdoc));
+  }
+
+  let prevFdoc = null;
+  const bodyRows = rows.map(r => {
+    const vencido = isVencido({fvenc: r.fvenc});
+    const dayStart = prevFdoc !== null && r.fdoc !== prevFdoc;
+    prevFdoc = r.fdoc;
+    const rowClass = [vencido ? "row-vencido" : "", dayStart ? "day-start" : ""].filter(Boolean).join(" ");
+    return `<tr class="${rowClass}">
+      <td class="datecell" data-raw="${r.fdoc || ""}">${fmtDate(r.fdoc)}</td>
+      <td class="datecell" data-raw="${r.fvenc || ""}">${fmtDate(r.fvenc)}</td>
+      ${numCell("debe", r.debe1)}
+      ${numCell("haber", r.haber1)}
+      ${numCell("debe", r.debe2)}
+      ${numCell("haber", r.haber2)}
+    </tr>`;
+  }).join("");
+  const body = bodyRows || `<tr class="empty-row"><td colspan="6">Sin comprobantes asignados.</td></tr>`;
+
+  const headHtml = COLUMNS.map(col => {
+    const active = sortState.field === col.key;
+    const arrow = active ? (sortState.dir === "asc" ? "▲" : "▼") : "";
+    return `<th class="sortable${active ? ' active' : ''}" onclick="sortMerged('${col.key}')">${col.label}<span class="arrow">${arrow}</span></th>`;
+  }).join("");
+
+  const view = document.getElementById("branchView");
+  view.innerHTML = `<div class="overflow"><table class="ledger">
+    <thead>
+      <tr class="branch-header">
+        <th colspan="2"></th>
+        <th colspan="2">Sucursal ${BRANCHES[0]}</th>
+        <th colspan="2">Sucursal ${BRANCHES[1]}</th>
+      </tr>
+      <tr>${headHtml}</tr>
+    </thead>
+    <tbody>${body}</tbody>
+  </table></div>`;
+}
+
+function renderAll(){
+  const empty = ITEMS.length === 0;
+  document.getElementById("emptyState").hidden = !empty;
+  document.getElementById("dayFilterBar").hidden = empty;
+  document.getElementById("branchView").hidden = empty;
+  if(empty){ document.getElementById("pendingBanner").hidden = true; return; }
+  renderPending();
+  renderMergedTable();
+}
+
+/* ---- Carga de un nuevo archivo Excel ---- */
+
+function isoFromDate(d){
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function excelSerialToISO(n){
+  return isoFromDate(new Date(Math.round((n - 25569) * 86400 * 1000)));
+}
+function toISO(val){
+  if(val instanceof Date) return isoFromDate(val);
+  if(typeof val === "number") return excelSerialToISO(val);
+  if(typeof val === "string"){
+    const s = val.trim();
+    let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if(m) return `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+    m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+  }
+  return null;
+}
+function toNumber(val){
+  if(typeof val === "number") return val;
+  if(typeof val === "string"){
+    let s = val.trim().replace(/\$/g, "").replace(/\s/g, "");
+    if(s === "") return 0;
+    if(/,\d{1,2}$/.test(s) && s.includes(".")) s = s.replace(/\./g, "").replace(",", ".");
+    else if(/,\d{1,2}$/.test(s)) s = s.replace(",", ".");
+    else s = s.replace(/,/g, "");
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+  return 0;
+}
+function detectSucursal(texto, tpos){
+  const t = String(texto || ""), p = String(tpos || "");
+  if(t.includes("31338") || p.includes("31338")) return "31338";
+  if(t.includes("31360") || p.includes("31360")) return "31360";
+  return null;
+}
+function findCol(headers, keys){
+  for(let i = 0; i < headers.length; i++){
+    const h = String(headers[i] || "").toLowerCase();
+    if(keys.some(k => h.includes(k))) return i;
+  }
+  return -1;
+}
+function parseRows(rows){
+  if(!rows.length) return [];
+  const headers = rows[0];
+  const iTipo = findCol(headers, ["tipo"]);
+  const iNro = findCol(headers, ["nro. legal", "nro legal"]);
+  const iTexto = findCol(headers, ["texto/sgc", "texto"]);
+  const iTpos = findCol(headers, ["t. pos", "t.pos", "pos."]);
+  const iFdoc = findCol(headers, ["f. doc", "f.doc"]);
+  const iFvenc = findCol(headers, ["f. venc", "f.venc"]);
+  const iMonto = findCol(headers, ["pendiente ars"]);
+  const items = [];
+  for(let r = 1; r < rows.length; r++){
+    const row = rows[r];
+    if(!row || row.every(c => c === "" || c == null)) continue;
+    const tipo = iTipo >= 0 ? row[iTipo] : row[0];
+    const nro = iNro >= 0 ? row[iNro] : row[1];
+    const texto = iTexto >= 0 ? row[iTexto] : row[4];
+    const tpos = iTpos >= 0 ? row[iTpos] : row[5];
+    const fdoc = toISO(iFdoc >= 0 ? row[iFdoc] : row[6]);
+    const fvenc = toISO(iFvenc >= 0 ? row[iFvenc] : row[7]);
+    const monto = toNumber(iMonto >= 0 ? row[iMonto] : row[9]);
+    if(!tipo && !nro) continue;
+    items.push({
+      id: r, tipo: tipo || "", nroLegal: String(nro || ""), texto: texto || "", tpos: tpos || "",
+      fdoc, fvenc, monto, sucursal: detectSucursal(texto, tpos)
+    });
+  }
+  return items;
+}
+
+const uploadZone = document.getElementById("uploadZone");
+const fileInput = document.getElementById("fileInput");
+const browseBtn = document.getElementById("browseBtn");
+const uploadCurrent = document.getElementById("uploadCurrent");
+
+function handleFile(file){
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type: "array", cellDates: true});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, raw: true, defval: ""});
+      const parsed = parseRows(rows);
+      if(parsed.length === 0){
+        uploadCurrent.textContent = "No se encontraron filas de datos en el archivo.";
+        return;
+      }
+      ITEMS = parsed;
+      assignments = {};
+      saveAssignments(assignments);
+      uploadCurrent.textContent = `Mostrando: ${file.name} (${ITEMS.length} comprobantes)`;
+      renderAll();
+    }catch(err){
+      uploadCurrent.textContent = "No se pudo leer el archivo. Verificá que sea el formato habitual (.xlsx).";
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+browseBtn.addEventListener("click", (e) => { e.stopPropagation(); fileInput.click(); });
+uploadZone.addEventListener("click", (e) => { if(e.target === uploadZone) fileInput.click(); });
+fileInput.addEventListener("change", (e) => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+["dragover", "dragenter"].forEach(evt => uploadZone.addEventListener(evt, (e) => {
+  e.preventDefault(); uploadZone.classList.add("dragover");
+}));
+["dragleave", "drop"].forEach(evt => uploadZone.addEventListener(evt, (e) => {
+  e.preventDefault(); uploadZone.classList.remove("dragover");
+}));
+uploadZone.addEventListener("drop", (e) => { if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+
+function excelSerial(iso){
+  if(!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return Math.round(Date.UTC(y, m - 1, d) / 86400000) + 25569;
+}
+
+document.addEventListener("copy", (e) => {
+  const sel = window.getSelection();
+  if(!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+  const numCells = Array.from(document.querySelectorAll("table.ledger td.num, table.ledger td.datecell"));
+  const selectedCells = numCells.filter(td => sel.containsNode(td, true));
+  if(selectedCells.length === 0) return;
+
+  const plainRows = [];
+  const htmlRows = [];
+  let currentTr = null, plainRow = null, htmlRow = null;
+
+  selectedCells.forEach(td => {
+    const tr = td.closest("tr");
+    if(tr !== currentTr){
+      currentTr = tr;
+      plainRow = []; plainRows.push(plainRow);
+      htmlRow = []; htmlRows.push(htmlRow);
+    }
+    const raw = td.dataset.raw || "";
+    plainRow.push(raw);
+    if(td.classList.contains("datecell")){
+      const serial = excelSerial(raw);
+      htmlRow.push(`<td style="mso-number-format:'dd\\/mm\\/yyyy';">${serial}</td>`);
+    } else {
+      if(raw === ""){
+        htmlRow.push("<td></td>");
+      } else {
+        const negative = parseFloat(raw) < 0;
+        const color = negative ? "#c0392b" : "#111111";
+        htmlRow.push(`<td style="mso-number-format:'\\$#\\,##0\\.00;[Red]\\-\\$#\\,##0\\.00';color:${color};">${raw}</td>`);
+      }
+    }
+  });
+
+  const plainText = plainRows.map(r => r.join("\t")).join("\n");
+  const htmlText = `<table><tbody>${htmlRows.map(r => `<tr>${r.join("")}</tr>`).join("")}</tbody></table>`;
+
+  e.clipboardData.setData("text/plain", plainText);
+  e.clipboardData.setData("text/html", htmlText);
+  e.preventDefault();
+});
+
+const daysInput = document.getElementById("daysInput");
+daysInput.addEventListener("change", () => {
+  dayFilter.days = Math.max(1, parseInt(daysInput.value, 10) || 3);
+  dayFilter.showAll = false;
+  renderMergedTable();
+});
+document.getElementById("showAllDaysBtn").addEventListener("click", () => {
+  dayFilter.showAll = true;
+  renderMergedTable();
+});
+
+renderAll();
+</script>
+</body>
+</html>
