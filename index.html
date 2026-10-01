@@ -364,7 +364,7 @@ function compareDefault(a, b){
 
 function numCell(cls, val){
   const has = val !== null && val !== undefined && val !== 0;
-  const raw = has ? val.toFixed(2) : "";
+  const raw = has ? val.toFixed(2).replace(".", ",") : "";
   const display = has ? (val < 0 ? "-" + fmtMoney(val) : fmtMoney(val)) : "";
   return `<td class="num ${cls}" data-raw="${raw}">${display}</td>`;
 }
@@ -596,22 +596,23 @@ document.addEventListener("copy", (e) => {
     }
     const raw = td.dataset.raw || "";
     plainRow.push(raw);
+    const FONT = "font-family:Calibri,sans-serif;font-size:11pt;";
     if(td.classList.contains("datecell")){
       const serial = excelSerial(raw);
-      htmlRow.push(`<td style="mso-number-format:'dd\\/mm\\/yyyy';">${serial}</td>`);
+      htmlRow.push(`<td style="${FONT}mso-number-format:'dd\\/mm\\/yyyy';">${serial}</td>`);
     } else {
       if(raw === ""){
-        htmlRow.push("<td></td>");
+        htmlRow.push(`<td style="${FONT}"></td>`);
       } else {
         const negative = parseFloat(raw) < 0;
-        const color = negative ? "#c0392b" : "#111111";
-        htmlRow.push(`<td style="mso-number-format:'\\$#\\,##0\\.00;[Red]\\-\\$#\\,##0\\.00';color:${color};">${raw}</td>`);
+        const color = negative ? "#FF0000" : "#000000";
+        htmlRow.push(`<td style="${FONT}mso-number-format:'\\$#\\,##0\\.00;[Red]\\-\\$#\\,##0\\.00';color:${color};">${raw}</td>`);
       }
     }
   });
 
   const plainText = plainRows.map(r => r.join("\t")).join("\n");
-  const htmlText = `<table><tbody>${htmlRows.map(r => `<tr>${r.join("")}</tr>`).join("")}</tbody></table>`;
+  const htmlText = `<table style="font-family:Calibri,sans-serif;font-size:11pt;"><tbody>${htmlRows.map(r => `<tr>${r.join("")}</tr>`).join("")}</tbody></table>`;
 
   e.clipboardData.setData("text/plain", plainText);
   e.clipboardData.setData("text/html", htmlText);
