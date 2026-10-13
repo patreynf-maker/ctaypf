@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -335,11 +336,21 @@ function buildMergedRows(){
   });
   const rows = [];
   groups.forEach(g => {
-    const n = Math.max(...g.slots.flatMap(s => [s.debe.length, s.haber.length]));
-    for(let i = 0; i < n; i++){
+    /* Debe y Haber nunca comparten línea dentro de la misma sucursal: se arman dos
+       conjuntos de filas independientes (uno para Debe, otro para Haber) y se unen
+       por posición solo entre sucursales, nunca entre lados opuestos. */
+    const nDebe = Math.max(0, ...g.slots.map(s => s.debe.length));
+    for(let i = 0; i < nDebe; i++){
       rows.push({
         fdoc: g.fdoc, fvenc: g.fvenc,
-        slots: g.slots.map(s => ({debe: s.debe[i] ?? null, haber: s.haber[i] ?? null}))
+        slots: g.slots.map(s => ({debe: s.debe[i] ?? null, haber: null}))
+      });
+    }
+    const nHaber = Math.max(0, ...g.slots.map(s => s.haber.length));
+    for(let i = 0; i < nHaber; i++){
+      rows.push({
+        fdoc: g.fdoc, fvenc: g.fvenc,
+        slots: g.slots.map(s => ({debe: null, haber: s.haber[i] ?? null}))
       });
     }
   });
@@ -358,7 +369,7 @@ function compareMerged(a, b, field){
 /* Orden por defecto: F. Doc. descendente */
 function compareDefault(a, b){
   const da = a.fdoc || "", db = b.fdoc || "";
-  if(da !== db) return db.localeCompare(da);
+  if(da !== db) return da.localeCompare(db);
   return (a.fvenc || "").localeCompare(b.fvenc || "");
 }
 
@@ -651,3 +662,5 @@ renderAll();
 </script>
 </body>
 </html>
+
+</body></html>
